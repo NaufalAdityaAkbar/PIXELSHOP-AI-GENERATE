@@ -1,6 +1,0 @@
-{
-  "name": "PixelShop",
-  "description": "Toko kamu, dikerjain AI. Asisten pembuatan konten bertenaga AI terlengkap khusus untuk UMKM Indonesia.",
-  "requestFramePermissions": ["camera"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

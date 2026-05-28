@@ -1,0 +1,138 @@
+// PixelShop — Prisma Schema
+// Supabase PostgreSQL / Local PostgreSQL + Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────
+// SHOP — profil toko user
+// ─────────────────────────────────
+model Shop {
+  id           String    @id @default(cuid())
+  userId       String    @unique              // dari Supabase Auth / Google OAuth
+  name         String
+  category     String
+  description  String?
+  logoUrl      String?
+  platforms    String[]                    // ['instagram','tokopedia']
+  brandVoice   String    @default("santai") // santai|formal|ceria|elegan
+  xp           Int       @default(0)
+  level        Int       @default(1)
+  streak       Int       @default(0)
+  lastActiveAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  products         Product[]
+  contents         GeneratedContent[]
+  calendarEvents   CalendarEvent[]
+  achievements     UserAchievement[]
+  aiSettings       AiSettings?
+}
+
+// ─────────────────────────────────
+// PRODUCT — katalog produk
+// ─────────────────────────────────
+model Product {
+  id          String   @id @default(cuid())
+  shopId      String
+  name        String
+  price       Int                      // dalam rupiah
+  description String?
+  imageUrl    String?
+  category    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  shop     Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  contents GeneratedContent[]
+}
+
+// ─────────────────────────────────
+// GENERATED CONTENT — history AI
+// ─────────────────────────────────
+model GeneratedContent {
+  id        String   @id @default(cuid())
+  shopId    String
+  productId String?
+  toolType  ToolType                 // enum
+  content   Json                     // { captions: string[] }
+  platform  String?
+  tone      String?
+  isSaved   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  product       Product?       @relation(fields: [productId], references: [id])
+  calendarEvent CalendarEvent?
+}
+
+enum ToolType {
+  CAPTION
+  DESCRIPTION
+  CONTENT_PLAN
+  CHAT_REPLY
+  COMPETITOR
+}
+
+// ─────────────────────────────────
+// CALENDAR — jadwal konten
+// ─────────────────────────────────
+model CalendarEvent {
+  id            String      @id @default(cuid())
+  shopId        String
+  contentId     String?     @unique
+  title         String
+  scheduledDate DateTime
+  platform      String
+  status        EventStatus @default(DRAFT)
+  createdAt     DateTime    @default(now())
+
+  shop    Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  content GeneratedContent? @relation(fields: [contentId], references: [id])
+}
+
+enum EventStatus {
+  DRAFT
+  SCHEDULED
+  DONE
+}
+
+// ─────────────────────────────────
+// AI SETTINGS — latih AI toko
+// ─────────────────────────────────
+model AiSettings {
+  id              String   @id @default(cuid())
+  shopId          String   @unique
+  aiCharacter     String   @default("sahabat") // sahabat|expert|hype
+  favoriteWords   String[]
+  avoidWords      String[]
+  formalityLevel  Int      @default(2)         // 1-5
+  targetAge       String   @default("semua")
+  targetLocation  String   @default("Indonesia")
+  exampleCaptions String[]
+  updatedAt       DateTime @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────
+// ACHIEVEMENTS
+// ─────────────────────────────────
+model UserAchievement {
+  id             String   @id @default(cuid())
+  shopId         String
+  achievementKey String  // grand_opening, first_caption, dll
+  unlockedAt     DateTime @default(now())
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, achievementKey])
+}

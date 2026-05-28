@@ -8,7 +8,7 @@ import { PageId } from '@/src/types';
 export default function ToolPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { products, preselectedProduct, addXP, saveGeneratedContent, addCalendarEvents } = useAppContext();
+  const { products, preselectedProduct, addXP, saveGeneratedContent, addCalendarEvents, contents, deleteGeneratedContent, aiTrainer } = useAppContext();
   
   if (!id || typeof id !== 'string') return null;
 
@@ -29,6 +29,9 @@ export default function ToolPage() {
       onSaveContent={saveGeneratedContent}
       onAddCalendarEvents={addCalendarEvents}
       onNavigate={(p) => router.push(`/${p.replace('_', '-')}`)}
+      contents={contents}
+      onDeleteContent={deleteGeneratedContent}
+      aiTrainer={aiTrainer}
     />
   );
 }

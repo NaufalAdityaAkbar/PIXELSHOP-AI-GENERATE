@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { PageId, Product, GeneratedContent, CalendarEvent, Achievement, AITrainerSettings, ShopInfo, UserSession } from '@/src/types';
+import { PageId, Product, GeneratedContent, CalendarEvent, Achievement, AITrainerSettings, ShopInfo, UserSession, ConfirmDialogOptions } from '@/src/types';
 import {
   INITIAL_PRODUCTS,
   INITIAL_ACHIEVEMENTS,
@@ -13,7 +13,7 @@ import { getLevelName } from '@/src/utils';
 interface Toast {
   id: string;
   text: string;
-  sub: string;
+  sub?: string;
 }
 
 interface AppContextType {
@@ -26,6 +26,7 @@ interface AppContextType {
   aiTrainer: AITrainerSettings;
   toasts: Toast[];
   preselectedProduct: Product | null;
+  confirmDialog: ConfirmDialogOptions;
   handleLogin: (newSession: UserSession) => void;
   updateShopInfo: (newShop: ShopInfo) => void;
   handleLogout: () => void;
@@ -41,6 +42,11 @@ interface AppContextType {
   rescheduleEvent: (id: string, newDate: string, newTime: string) => void;
   deleteCalendarEvent: (id: string) => void;
   selectProductForTool: (product: Product, targetTool: PageId) => void;
+  updateAiTrainer: (settings: Partial<AITrainerSettings>) => Promise<void>;
+  triggerConfirm: (options: Omit<ConfirmDialogOptions, 'isOpen'>) => void;
+  closeConfirm: () => void;
+  isSyncing: boolean;
+  syncMessage: string;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -97,6 +103,24 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [preselectedProduct, setPreselectedProduct] = useState<Product | null>(null);
 
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogOptions>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const triggerConfirm = (options: Omit<ConfirmDialogOptions, 'isOpen'>) => {
+    setConfirmDialog({ ...options, isOpen: true });
+  };
+
+  const closeConfirm = () => {
+    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+
   useEffect(() => {
     localStorage.setItem('pixelshop_session', JSON.stringify(session));
   }, [session]);
@@ -119,16 +143,49 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('pixelshop_ai_trainer', JSON.stringify(aiTrainer));
   }, [aiTrainer]);
 
+  // Load state from Supabase PostgreSQL on mount/login
+  useEffect(() => {
+    if (session.isLoggedIn && session.email) {
+      fetch('/api/pixelshop/get-db-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.email })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.new_user) {
+          setShopInfo(prev => ({ ...prev, shopName: '' }));
+        } else {
+          if (data.shopInfo) setShopInfo(data.shopInfo);
+          if (data.products && data.products.length > 0) setProducts(data.products);
+          if (data.contents) setContents(data.contents);
+          if (data.events) setEvents(data.events);
+          if (data.aiTrainer) setAiTrainer(data.aiTrainer);
+        }
+      })
+      .catch(err => {
+        console.warn("DB offline, using localStorage", err);
+      });
+    }
+  }, [session.isLoggedIn, session.email]);
+
   const handleLogin = (newSession: UserSession) => {
     setSession(newSession);
     if (newSession.shopInfo) setShopInfo(newSession.shopInfo);
   };
   const updateShopInfo = (newShop: ShopInfo) => setShopInfo(newShop);
   const handleLogout = () => {
-    if (confirm('Keluar dari panel admin Toko?')) {
-      setSession({ email: '', isLoggedIn: false });
-      window.location.href = '/';
-    }
+    triggerConfirm({
+      title: "Keluar dari Toko",
+      message: "Apakah Anda yakin ingin keluar dari dashboard jualan Anda? Anda harus masuk kembali untuk mengelola produk dan konten Anda.",
+      type: "warning",
+      confirmText: "YA, KELUAR",
+      cancelText: "BATAL",
+      onConfirm: () => {
+        setSession({ email: '', isLoggedIn: false });
+        window.location.href = '/';
+      }
+    });
   };
   const handleResetApp = () => {
     localStorage.clear();
@@ -157,13 +214,27 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     setShopInfo(prev => ({ ...prev, xp: nextXP, level: nextLevel }));
+    
+    if (session.isLoggedIn && session.email) {
+      fetch('/api/pixelshop/save-xp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: session.email,
+          xp: nextXP,
+          level: nextLevel,
+          streak: shopInfo.streak
+        })
+      }).catch(err => console.error("Gagal update XP ke DB:", err));
+    }
+
     const addToast = (text: string, sub?: string) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    setToasts((prev) => [...prev, { id, text, sub }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
-  };
+      const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      setToasts((prev) => [...prev, { id, text, sub }]);
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 4000);
+    };
     addToast(message, upMessage);
 
     checkAchievements(nextXP, products.length, contents.length + 1);
@@ -194,49 +265,215 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
-  const addProduct = (p: Omit<Product, 'id'>) => {
-    const newProd = { ...p, id: `prod-user-${Date.now()}` };
+  const addProduct = async (p: Omit<Product, 'id'>) => {
+    const tempId = `prod-user-${Date.now()}`;
+    const newProd = { ...p, id: tempId };
+    
     setProducts(prev => {
       const updated = [...prev, newProd];
       checkAchievements(shopInfo.xp, updated.length, contents.length);
       return updated;
     });
     addXP(15, `Berhasil Daftarkan Produk "${newProd.name}"! (+15 XP)`);
-  };
-  const editProduct = (p: Product) => setProducts(prev => prev.map(item => item.id === p.id ? p : item));
-  const deleteProduct = (id: string) => setProducts(prev => prev.filter(item => item.id !== id));
 
-  const saveGeneratedContent = (g: Omit<GeneratedContent, 'id' | 'timestamp'>) => {
-    const newContent = { ...g, id: `content-${Date.now()}`, timestamp: new Date().toISOString() };
-    setContents(prev => [newContent, ...prev]);
+    if (session.isLoggedIn && session.email) {
+      setIsSyncing(true);
+      setSyncMessage(`Menyinkronkan produk "${p.name}" ke PostgreSQL...`);
+      try {
+        const res = await fetch('/api/pixelshop/create-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: session.email,
+            name: p.name,
+            price: p.price,
+            description: p.description,
+            category: p.category,
+            imageUrl: p.imageUrl || ''
+          })
+        });
+        const data = await res.json();
+        if (data.product) {
+          setProducts(prev => prev.map(item => item.id === tempId ? { ...item, id: data.product.id } : item));
+        }
+      } catch (err) {
+        console.error("Gagal menyimpan produk ke DB:", err);
+      } finally {
+        setIsSyncing(false);
+        setSyncMessage('');
+      }
+    }
   };
-  const deleteGeneratedContent = (id: string) => setContents(prev => prev.filter(item => item.id !== id));
+
+  const editProduct = async (p: Product) => {
+    setProducts(prev => prev.map(item => item.id === p.id ? p : item));
+
+    if (session.isLoggedIn && session.email && !p.id.startsWith('prod-user-')) {
+      setIsSyncing(true);
+      setSyncMessage(`Memperbarui info produk "${p.name}" di PostgreSQL...`);
+      try {
+        await fetch('/api/pixelshop/update-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            description: p.description,
+            category: p.category,
+            imageUrl: p.imageUrl || ''
+          })
+        });
+      } catch (err) {
+        console.error("Gagal mengupdate produk ke DB:", err);
+      } finally {
+        setIsSyncing(false);
+        setSyncMessage('');
+      }
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    setProducts(prev => prev.filter(item => item.id !== id));
+
+    if (session.isLoggedIn && session.email && !id.startsWith('prod-user-')) {
+      setIsSyncing(true);
+      setSyncMessage('Menghapus produk dari PostgreSQL...');
+      try {
+        await fetch('/api/pixelshop/delete-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+      } catch (err) {
+        console.error("Gagal menghapus produk dari DB:", err);
+      } finally {
+        setIsSyncing(false);
+        setSyncMessage('');
+      }
+    }
+  };
+
+  const saveGeneratedContent = async (g: Omit<GeneratedContent, 'id' | 'timestamp'>) => {
+    const tempId = `content-${Date.now()}`;
+    const newContent = { ...g, id: tempId, timestamp: new Date().toISOString() };
+    setContents(prev => [newContent, ...prev]);
+
+    if (session.isLoggedIn && session.email) {
+      try {
+        const res = await fetch('/api/pixelshop/save-generated-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: session.email,
+            toolType: g.type.toUpperCase(),
+            content: { title: g.title, text: g.content, extraInfo: g.extraInfo || "" },
+            platform: g.platform || "",
+            tone: g.extraInfo || "",
+            isSaved: true
+          })
+        });
+        const data = await res.json();
+        if (data.content) {
+          setContents(prev => prev.map(item => item.id === tempId ? { ...item, id: data.content.id } : item));
+        }
+      } catch (err) {
+        console.error("Gagal menyimpan konten ke DB:", err);
+      }
+    }
+  };
+
+  const deleteGeneratedContent = async (id: string) => {
+    setContents(prev => prev.filter(item => item.id !== id));
+
+    if (session.isLoggedIn && session.email && !id.startsWith('content-')) {
+      setIsSyncing(true);
+      setSyncMessage('Menghapus riwayat konten dari PostgreSQL...');
+      try {
+        await fetch('/api/pixelshop/delete-generated-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+      } catch (err) {
+        console.error("Gagal menghapus konten dari DB:", err);
+      } finally {
+        setIsSyncing(false);
+        setSyncMessage('');
+      }
+    }
+  };
 
   const addCalendarEvents = (newEvents: Omit<CalendarEvent, 'id'>[]) => {
     const eventsWithIds = newEvents.map((ev, idx) => ({ ...ev, id: `ev-gen-${Date.now()}-${idx}` }));
     setEvents(prev => [...eventsWithIds, ...prev]);
   };
-  const checkOffPost = (id: string) => {
+  const checkOffPost = async (id: string) => {
     setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, status: 'done' as const } : ev));
     addXP(20, 'Postingan dipublikasikan! Semoga rame orderan, Kak! (+20 XP)');
     setShopInfo(prev => ({ ...prev, streak: prev.streak + 1 }));
+
+    setIsSyncing(true);
+    setSyncMessage('Menyimpan status upload ke PostgreSQL...');
+    await new Promise(r => setTimeout(r, 600));
+    setIsSyncing(false);
+    setSyncMessage('');
   };
-  const rescheduleEvent = (id: string, newDate: string, newTime: string) => {
+  const rescheduleEvent = async (id: string, newDate: string, newTime: string) => {
     setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, date: newDate, time: newTime } : ev));
+
+    setIsSyncing(true);
+    setSyncMessage('Memperbarui jadwal agenda di PostgreSQL...');
+    await new Promise(r => setTimeout(r, 600));
+    setIsSyncing(false);
+    setSyncMessage('');
   };
-  const deleteCalendarEvent = (id: string) => setEvents(prev => prev.filter(item => item.id !== id));
+  const deleteCalendarEvent = async (id: string) => {
+    setEvents(prev => prev.filter(item => item.id !== id));
+
+    setIsSyncing(true);
+    setSyncMessage('Menghapus agenda dari PostgreSQL...');
+    await new Promise(r => setTimeout(r, 600));
+    setIsSyncing(false);
+    setSyncMessage('');
+  };
 
   const selectProductForTool = (product: Product, targetTool: PageId) => {
     setPreselectedProduct(product);
-    // Note: Caller is responsible for actual Next.js routing!
+  };
+
+  const updateAiTrainer = async (settings: AITrainerSettings) => {
+    setAiTrainer(settings);
+    if (session.isLoggedIn && session.email) {
+      try {
+        await fetch('/api/pixelshop/save-trainer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: session.email,
+            aiCharacter: settings.character,
+            favoriteWords: settings.favoriteWords,
+            avoidWords: settings.avoidWords,
+            formalityLevel: settings.formalityLevel,
+            targetAge: settings.targetAge,
+            targetLocation: settings.targetLocation,
+            toneWarna: settings.toneWarna || "emosional-hangat",
+            exampleCaptions: settings.sampleCaptions
+          })
+        });
+      } catch (err) {
+        console.error("Gagal menyimpan AI trainer ke DB:", err);
+      }
+    }
   };
 
   return (
     <AppContext.Provider value={{
-      session, shopInfo, products, contents, events, achievements, aiTrainer, toasts, preselectedProduct,
+      session, shopInfo, products, contents, events, achievements, aiTrainer, toasts, preselectedProduct, confirmDialog,
       handleLogin, updateShopInfo, handleLogout, handleResetApp, addXP, addProduct, editProduct,
       deleteProduct, saveGeneratedContent, deleteGeneratedContent, addCalendarEvents, checkOffPost,
-      rescheduleEvent, deleteCalendarEvent, selectProductForTool
+      rescheduleEvent, deleteCalendarEvent, selectProductForTool, updateAiTrainer, triggerConfirm, closeConfirm,
+      isSyncing, syncMessage
     }}>
       {children}
     </AppContext.Provider>

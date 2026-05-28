@@ -37,6 +37,9 @@ interface ToolsViewsProps {
   onSaveContent: (content: Omit<GeneratedContent, 'id' | 'timestamp'>) => void;
   onAddCalendarEvents: (events: Omit<CalendarEvent, 'id'>[]) => void;
   onNavigate: (page: PageId) => void;
+  contents?: GeneratedContent[];
+  onDeleteContent?: (id: string) => void;
+  aiTrainer?: any;
 }
 
 export default function ToolsViews({
@@ -46,7 +49,10 @@ export default function ToolsViews({
   onAddXP,
   onSaveContent,
   onAddCalendarEvents,
-  onNavigate
+  onNavigate,
+  contents = [],
+  onDeleteContent,
+  aiTrainer
 }: ToolsViewsProps) {
   // Preselected product mapping or default first product
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -76,6 +82,10 @@ export default function ToolsViews({
 
   // Web Speech API states & hook
   const [customVoiceInstructions, setCustomVoiceInstructions] = useState('');
+  const [customDescriptionInstructions, setCustomDescriptionInstructions] = useState('');
+  const [customPlanInstructions, setCustomPlanInstructions] = useState('');
+  const [customChatInstructions, setCustomChatInstructions] = useState('');
+  const [customCompetitorInstructions, setCustomCompetitorInstructions] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [listeningTarget, setListeningTarget] = useState<'instructions' | 'chatContext' | 'competitorName' | null>(null);
   const [speechError, setSpeechError] = useState<string | null>(null);
@@ -259,7 +269,7 @@ export default function ToolsViews({
           category: activeProduct?.category,
           productName: activeProduct?.name,
           price: activeProduct?.price,
-          productDesc: activeProduct?.description,
+          productDesc: `${activeProduct?.description || ''}${customDescriptionInstructions ? `\n\n[Instruksi Khusus / Data Latih]: ${customDescriptionInstructions}` : ''}`,
           marketplace,
           seoFriendly
         })
@@ -301,7 +311,7 @@ export default function ToolsViews({
           shopName,
           category: activeProduct?.category,
           productName: activeProduct?.name,
-          productDesc: activeProduct?.description
+          productDesc: `${activeProduct?.description || ''}${customPlanInstructions ? `\n\n[Instruksi Khusus / Data Latih]: ${customPlanInstructions}` : ''}`
         })
       });
       const data = await response.json();
@@ -364,7 +374,7 @@ export default function ToolsViews({
         body: JSON.stringify({
           shopName,
           situation: chatSituation,
-          context: chatContext
+          context: `${chatContext || ''}${customChatInstructions ? `\n\n[Instruksi Khusus / Data Latih]: ${customChatInstructions}` : ''}`
         })
       });
       const data = await response.json();
@@ -404,7 +414,7 @@ export default function ToolsViews({
         body: JSON.stringify({
           shopName,
           productName: activeProduct?.name,
-          productDesc: activeProduct?.description,
+          productDesc: `${activeProduct?.description || ''}${customCompetitorInstructions ? `\n\n[Instruksi Khusus / Data Latih]: ${customCompetitorInstructions}` : ''}`,
           competitorName
         })
       });
@@ -490,12 +500,12 @@ export default function ToolsViews({
             <h2 className="text-lg font-serif font-medium text-brand-text">Pilihan Konten</h2>
           </div>
 
-        {/* Input Product Dropdown - Hidden for Chat Tool */}
+         {/* Input Product Dropdown - Hidden for Chat Tool */}
         {toolId !== 'chat_reply_tool' && (
           <div className="space-y-1.5">
-            <label className="block text-xs font-mono text-brand-text">PILIH PRODUK KATALOG</label>
+            <label className="block text-[10px] font-mono text-brand-muted uppercase tracking-wider">PILIH PRODUK KATALOG</label>
             <select
-              className="w-full bg-[#1c1410] border border-brand-border rounded px-3 py-2 text-xs text-brand-text focus:outline-none focus:border-brand-accent"
+              className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl px-3.5 py-2.5 text-xs text-brand-text focus:outline-none focus:border-brand-accent transition-all duration-200"
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
             >
@@ -512,7 +522,7 @@ export default function ToolsViews({
         {toolId === 'caption_tool' && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-mono text-brand-text">PLATFORM TARGET</label>
+              <label className="block text-[10px] font-mono text-brand-muted uppercase tracking-wider">PLATFORM TARGET</label>
               <div className="grid grid-cols-2 gap-1.5">
                 {[
                   { id: 'instagram', label: '📸 Instagram' },
@@ -524,9 +534,9 @@ export default function ToolsViews({
                     key={p.id}
                     type="button"
                     onClick={() => setPlatform(p.id as any)}
-                    className={`p-2 rounded text-xs text-left border ${
+                    className={`p-2.5 rounded-xl text-xs text-left border cursor-pointer transition-all duration-200 ${
                       platform === p.id
-                        ? 'border-brand-accent bg-brand-accent/15 text-brand-text'
+                        ? 'border-brand-accent bg-brand-accent/15 text-brand-text font-bold'
                         : 'border-brand-border/40 bg-transparent text-brand-muted hover:border-brand-accent/20'
                     }`}
                   >
@@ -537,9 +547,9 @@ export default function ToolsViews({
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-mono text-brand-text">NADA / STYLE EMOSI</label>
+              <label className="block text-[10px] font-mono text-brand-muted uppercase tracking-wider">NADA / STYLE EMOSI</label>
               <select
-                className="w-full bg-[#1c1c1a] border border-brand-border rounded px-3 py-2 text-xs text-brand-text focus:outline-none focus:border-brand-accent animate-none"
+                className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl px-3.5 py-2.5 text-xs text-brand-text focus:outline-none focus:border-brand-accent transition-all duration-200"
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
               >
@@ -556,7 +566,7 @@ export default function ToolsViews({
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-mono text-brand-text">
+              <div className="flex justify-between text-[10px] font-mono text-brand-muted uppercase tracking-wider">
                 <span>PANJANG CAPTION</span>
                 <span className="text-brand-accent font-bold capitalize">{captionLength}</span>
               </div>
@@ -566,7 +576,7 @@ export default function ToolsViews({
                     key={len}
                     type="button"
                     onClick={() => setCaptionLength(len as any)}
-                    className={`flex-1 py-1.5 rounded text-xs border ${
+                    className={`flex-1 py-2 rounded-xl text-xs border cursor-pointer transition-all duration-200 ${
                       captionLength === len
                         ? 'border-brand-accent bg-brand-accent/20 text-brand-text font-bold'
                         : 'border-brand-border/40 text-brand-muted hover:border-brand-accent/15'
@@ -581,7 +591,7 @@ export default function ToolsViews({
             {/* VOX LABS: Integrated Voice Dictation Workspace (Web Speech API) */}
             <div className="space-y-2 border-t border-brand-border/20 pt-4 mt-4">
               <div className="flex justify-between items-center">
-                <label className="text-[11px] font-mono font-bold text-brand-text flex items-center gap-1.5 uppercase tracking-wide">
+                <label className="text-[10px] font-mono font-bold text-brand-muted flex items-center gap-1.5 uppercase tracking-wide">
                   <Mic className="w-3.5 h-3.5 text-brand-accent shrink-0 animate-pulse" /> Instruksi Branding Suara (Bicara 🎙️)
                 </label>
                 <div className="flex gap-2">
@@ -589,12 +599,12 @@ export default function ToolsViews({
                     <button
                       type="button"
                       onClick={() => setCustomVoiceInstructions('')}
-                      className="text-[10px] text-brand-muted hover:text-brand-text underline transition"
+                      className="text-[10px] text-brand-muted hover:text-brand-text underline transition cursor-pointer"
                     >
                       Hapus
                     </button>
                   )}
-                  <span className="text-[9px] font-mono text-brand-muted bg-brand-surface border border-brand-border/30 px-1.5 py-0.5 rounded uppercase">
+                  <span className="text-[9px] font-mono text-brand-muted bg-[#131b2e] border border-brand-border/30 px-1.5 py-0.5 rounded uppercase">
                     Speech API
                   </span>
                 </div>
@@ -602,7 +612,7 @@ export default function ToolsViews({
 
               <div className="relative">
                 <textarea
-                  className="w-full bg-[#1c1410] border border-brand-border/40 rounded-xl p-3 pr-10 text-xs text-brand-text focus:outline-none focus:border-brand-accent min-h-[70px] placeholder:text-brand-muted/50 leading-relaxed"
+                  className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl p-3.5 pr-10 text-xs text-brand-text focus:outline-none focus:border-brand-accent min-h-[70px] placeholder:text-brand-muted/50 leading-relaxed transition-all duration-200"
                   placeholder="Klik tombol mic jualan disamping untuk bicara / mendikte instruksi promo, diskon, atau info khas jualan Anda secara praktis..."
                   value={customVoiceInstructions}
                   onChange={(e) => setCustomVoiceInstructions(e.target.value)}
@@ -614,7 +624,7 @@ export default function ToolsViews({
                   className={`absolute right-2.5 bottom-2.5 p-2 rounded-full cursor-pointer transition-all duration-300 shadow-md ${
                     isListening && listeningTarget === 'instructions'
                       ? 'bg-emerald-500 text-brand-bg animate-pulse ring-4 ring-emerald-500/20'
-                      : 'bg-[#33251a] border border-brand-accent/30 hover:bg-brand-accent/20 text-brand-accent'
+                      : 'bg-[#131b2e] border border-brand-accent/30 hover:bg-brand-accent/20 text-brand-accent'
                   }`}
                   title={isListening && listeningTarget === 'instructions' ? 'Sedang merekam suara... (Klik untuk berhenti)' : 'Mulai rekam suara jualan'}
                 >
@@ -656,17 +666,17 @@ export default function ToolsViews({
         {toolId === 'description_tool' && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-mono text-brand-text">PILIH MARKETPLACE</label>
+              <label className="block text-[10px] font-mono text-brand-muted uppercase tracking-wider">PILIH MARKETPLACE</label>
               <div className="grid grid-cols-3 gap-1.5">
                 {['Shopee', 'Tokopedia', 'TikTok Shop'].map((m) => (
                   <button
                     key={m}
                     type="button"
                     onClick={() => setMarketplace(m as any)}
-                    className={`py-2 rounded text-[10px] font-bold text-center border ${
+                    className={`py-2.5 rounded-xl text-[10px] font-extrabold text-center border cursor-pointer transition-all duration-200 ${
                       marketplace === m
-                        ? 'border-brand-accent bg-brand-accent/15 text-brand-text'
-                        : 'border-brand-border/40 bg-transparent text-brand-muted'
+                        ? 'border-brand-accent bg-brand-accent/15 text-brand-text font-bold'
+                        : 'border-brand-border/40 bg-transparent text-brand-muted hover:border-brand-accent/20'
                     }`}
                   >
                     {m}
@@ -688,10 +698,23 @@ export default function ToolsViews({
               />
             </div>
 
+            {/* DATA LATIH / INSTRUKSI KHUSUS SEO DESCRIPTION */}
+            <div className="space-y-1.5 border-t border-brand-border/20 pt-4">
+              <label className="block text-[10px] font-mono text-brand-text flex items-center gap-1.5 uppercase tracking-wide">
+                🧠 DATA LATIH / INSTRUKSI SEO KUSTOM
+              </label>
+              <textarea
+                className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-accent min-h-[60px] placeholder:text-brand-muted/50"
+                placeholder="Tulis instruksi khusus SEO atau spesifikasi teknis tambahan (cth: sertakan ukuran jumbo, berat 500gr, dsb)..."
+                value={customDescriptionInstructions}
+                onChange={(e) => setCustomDescriptionInstructions(e.target.value)}
+              />
+            </div>
+
             <button
               onClick={generateDescription}
               disabled={loading}
-              className="btn-accent w-full py-3.5 rounded-lg flex items-center justify-center gap-2 text-sm font-extrabold mt-6"
+              className="btn-accent w-full py-3.5 rounded-lg flex items-center justify-center gap-2 text-sm font-extrabold mt-2"
             >
               {loading ? <>⚙️ Menyusun Deskripsi...</> : <><Sparkles className="w-4 h-4" /> Buat Deskripsi SEO (+10 XP)</>}
             </button>
@@ -708,10 +731,23 @@ export default function ToolsViews({
               </p>
             </div>
 
+            {/* DATA LATIH / INSTRUKSI KHUSUS CONTENT PLAN */}
+            <div className="space-y-1.5 border-t border-brand-border/20 pt-4">
+              <label className="block text-[10px] font-mono text-brand-text flex items-center gap-1.5 uppercase tracking-wide">
+                🧠 DATA LATIH / STRATEGI KONTEN KUSTOM
+              </label>
+              <textarea
+                className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-accent min-h-[60px] placeholder:text-brand-muted/50"
+                placeholder="Tulis instruksi khusus marketing atau tema kampanye (cth: fokus promo Gajian, campaign kemerdekaan, dsb)..."
+                value={customPlanInstructions}
+                onChange={(e) => setCustomPlanInstructions(e.target.value)}
+              />
+            </div>
+
             <button
               onClick={generateContentPlan}
               disabled={loading}
-              className="btn-accent w-full py-3.5 rounded-lg flex items-center justify-center gap-2 font-extrabold mt-6"
+              className="btn-accent w-full py-3.5 rounded-lg flex items-center justify-center gap-2 font-extrabold mt-2"
             >
               {loading ? <>⚙️ Menghitung Hari...</> : <><Sparkles className="w-4 h-4" /> Susun Rencana Mingguan (+25 XP)</>}
             </button>
@@ -722,9 +758,9 @@ export default function ToolsViews({
         {toolId === 'chat_reply_tool' && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-mono text-brand-text">SITUASI CHAT MASUK</label>
+              <label className="block text-[10px] font-mono text-brand-muted uppercase tracking-wider">SITUASI CHAT MASUK</label>
               <select
-                className="w-full bg-[#1c1410] border border-brand-border rounded px-3 py-2 text-xs text-brand-text focus:outline-none focus:border-brand-accent"
+                className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl px-3.5 py-2.5 text-xs text-brand-text focus:outline-none focus:border-brand-accent transition-all duration-200"
                 value={chatSituation}
                 onChange={(e) => setChatSituation(e.target.value)}
               >
@@ -738,15 +774,15 @@ export default function ToolsViews({
 
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="block text-xs font-mono text-brand-text">KONTEKS TAMBAHAN (OPSIONAL)</label>
+                <label className="block text-[10px] font-mono text-brand-muted uppercase tracking-wider">KONTEKS TAMBAHAN (OPSIONAL)</label>
                 <div className="flex gap-1.5 items-center">
-                  <span className="text-[9px] font-mono text-brand-muted uppercase">Voice Dictate 🎙️</span>
+                  <span className="text-[9px] font-mono text-brand-muted uppercase bg-[#131b2e] px-1.5 py-0.5 rounded border border-brand-border/30">Voice Dictate 🎙️</span>
                 </div>
               </div>
               <div className="relative">
                 <textarea
                   rows={3}
-                  className="w-full bg-[#1c1410] border border-brand-border rounded px-3 pr-10 py-2 text-xs text-brand-text focus:outline-none focus:border-brand-accent placeholder:text-brand-muted/45 leading-relaxed"
+                  className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl p-3.5 pr-10 text-xs text-brand-text focus:outline-none focus:border-brand-accent placeholder:text-brand-muted/45 leading-relaxed transition-all duration-200"
                   placeholder="Misal: Sisa 3 pcs lagi, beri voucher diskon 5% dst... ATAU klik mic jualan dan suarakan langsung!"
                   value={chatContext}
                   onChange={(e) => setChatContext(e.target.value)}
@@ -757,7 +793,7 @@ export default function ToolsViews({
                   className={`absolute right-2.5 bottom-2.5 p-1.5 rounded-full cursor-pointer transition-all duration-300 ${
                     isListening && listeningTarget === 'chatContext'
                       ? 'bg-emerald-500 text-brand-bg animate-pulse ring-4 ring-emerald-500/20'
-                      : 'bg-[#33251a] border border-brand-accent/20 hover:bg-brand-accent/15 text-brand-accent'
+                      : 'bg-[#131b2e] border border-brand-accent/20 hover:bg-brand-accent/15 text-brand-accent'
                   }`}
                   title={isListening && listeningTarget === 'chatContext' ? 'Merekam konteks... (Klik untuk berhenti)' : 'Diktekkan konteks chat'}
                 >
@@ -772,10 +808,23 @@ export default function ToolsViews({
               )}
             </div>
 
+            {/* DATA LATIH / INSTRUKSI KHUSUS CHAT REPLY */}
+            <div className="space-y-1.5 border-t border-brand-border/20 pt-4">
+              <label className="block text-[10px] font-mono text-brand-text flex items-center gap-1.5 uppercase tracking-wide">
+                🧠 DATA LATIH / ATURAN RESEP CS KUSTOM
+              </label>
+              <textarea
+                className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-accent min-h-[60px] placeholder:text-brand-muted/50"
+                placeholder="Tulis aturan kustom bagi CS (cth: jangan sebut refund uang tapi ganti barang baru, sebutkan nama pelanggan, dsb)..."
+                value={customChatInstructions}
+                onChange={(e) => setCustomChatInstructions(e.target.value)}
+              />
+            </div>
+
             <button
               onClick={generateChatReply}
               disabled={loading}
-              className="btn-accent w-full py-3.5 rounded-lg flex items-center justify-center gap-2 font-extrabold mt-6"
+              className="btn-accent w-full py-3.5 rounded-lg flex items-center justify-center gap-2 font-extrabold mt-2"
             >
               {loading ? <>⚙️ Menyalin Nada CS...</> : <><Sparkles className="w-4 h-4" /> Buat Balasan Ramah (+5 XP)</>}
             </button>
@@ -787,14 +836,14 @@ export default function ToolsViews({
           <div className="space-y-4">
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="block text-xs font-mono text-brand-text">NAMA BRAND PESAING / KOMPETITOR</label>
-                <span className="text-[9px] font-mono text-brand-muted uppercase">Voice Dictate 🎙️</span>
+                <label className="block text-[10px] font-mono text-brand-muted uppercase tracking-wider">NAMA BRAND PESAING / KOMPETITOR</label>
+                <span className="text-[9px] font-mono text-brand-muted uppercase bg-[#131b2e] px-1.5 py-0.5 rounded border border-brand-border/30">Voice Dictate 🎙️</span>
               </div>
               <div className="relative">
                 <input
                   type="text"
                   required
-                  className="w-full bg-[#1c1410] border border-brand-border rounded px-3 pr-10 py-2 text-xs text-brand-text focus:outline-none focus:border-brand-accent placeholder:text-brand-muted/45"
+                  className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl px-3.5 pr-10 py-2.5 text-xs text-brand-text focus:outline-none focus:border-brand-accent placeholder:text-brand-muted/45 transition-all duration-200"
                   placeholder="Contoh: Basreng Istiqomah / Toko Sebelah"
                   value={competitorName}
                   onChange={(e) => setCompetitorName(e.target.value)}
@@ -805,7 +854,7 @@ export default function ToolsViews({
                   className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full cursor-pointer transition-all duration-300 ${
                     isListening && listeningTarget === 'competitorName'
                       ? 'bg-emerald-500 text-brand-bg animate-pulse ring-4 ring-emerald-500/20'
-                      : 'bg-[#33251a] border border-brand-accent/20 hover:bg-brand-accent/15 text-brand-accent'
+                      : 'bg-[#131b2e] border border-brand-accent/20 hover:bg-brand-accent/15 text-brand-accent'
                   }`}
                   title={isListening && listeningTarget === 'competitorName' ? 'Merekam... (Klik untuk berhenti)' : 'Dikte nama brand pesaing'}
                 >
@@ -820,10 +869,23 @@ export default function ToolsViews({
               )}
             </div>
 
+            {/* DATA LATIH / INSTRUKSI KHUSUS COMPETITOR USP */}
+            <div className="space-y-1.5 border-t border-brand-border/20 pt-4">
+              <label className="block text-[10px] font-mono text-brand-text flex items-center gap-1.5 uppercase tracking-wide">
+                🧠 DATA LATIH / PANDUAN RISET KUSTOM
+              </label>
+              <textarea
+                className="w-full bg-[#090e1a] border border-brand-border/40 rounded-xl p-3 text-xs text-brand-text focus:outline-none focus:border-brand-accent min-h-[60px] placeholder:text-brand-muted/50"
+                placeholder="Tulis kelebihan atau kelemahan spesifik kompetitor (cth: mereka jual lebih murah tapi plastik tipis, rasa kurang gurih, dsb)..."
+                value={customCompetitorInstructions}
+                onChange={(e) => setCustomCompetitorInstructions(e.target.value)}
+              />
+            </div>
+
             <button
               onClick={generateCompetitorAnalysis}
               disabled={loading}
-              className="btn-accent w-full py-3.5 rounded-lg flex items-center justify-center gap-2 font-extrabold mt-6"
+              className="btn-accent w-full py-3.5 rounded-lg flex items-center justify-center gap-2 font-extrabold mt-2"
             >
               {loading ? <>⚙️ Membandingkan Pasar...</> : <><Sparkles className="w-4 h-4" /> Mulai Analisis USP (+15 XP)</>}
             </button>
@@ -833,7 +895,7 @@ export default function ToolsViews({
 
       {/* RIGHT COLUMN: Interactive Generation Output Panels */}
       <div className="lg:col-span-8 space-y-6">
-        <div className="flex justify-between items-center bg-[#261e14] border border-brand-border/30 rounded-xl px-5 py-4">
+        <div className="flex justify-between items-center bg-brand-surface border border-brand-border/40 rounded-xl px-5 py-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-brand-accent animate-spin-slow" />
             <div>
@@ -856,8 +918,12 @@ export default function ToolsViews({
           !planOutput &&
           !chatOutput &&
           !competitorOutput && (
-            <div className="glass-card p-16 text-center text-brand-muted/70 space-y-4">
-              <div className="text-6xl animate-bounce">🤖</div>
+            <div className="glass-card p-16 text-center text-brand-muted/70 space-y-5 border border-brand-border/30">
+              <div className="flex justify-center">
+                <div className="p-4 bg-brand-accent/10 border border-brand-accent/25 rounded-2xl animate-bounce">
+                  <Sparkles className="w-10 h-10 text-brand-accent" />
+                </div>
+              </div>
               <h3 className="font-bold text-base text-brand-text">Menunggu Formulasi Anda</h3>
               <p className="text-xs max-w-sm mx-auto leading-relaxed">
                 Pilih parameter di bagian kiri lalu tekan tombol formulasikan untuk memanggil asisten AI Toko PixelShop Anda.
@@ -893,20 +959,20 @@ export default function ToolsViews({
                 </div>
               </div>
 
-              <div className="bg-[#1c1410] border border-brand-border/40 p-5 rounded-xl space-y-4 font-sans text-brand-text select-all leading-relaxed whitespace-pre-line text-sm neumorph-inset font-medium">
+              <div className="bg-[#090e1a] border border-brand-border/40 p-5 rounded-xl space-y-4 font-sans text-brand-text select-all leading-relaxed whitespace-pre-line text-sm neumorph-inset font-medium">
                 {captionOutput[activeCaptionTab]}
               </div>
 
               <div className="flex flex-wrap gap-2.5">
                 <button
                   onClick={() => triggerCopy(captionOutput[activeCaptionTab])}
-                  className="px-5 py-3 border border-brand-border text-brand-text hover:border-brand-accent/50 rounded-lg text-xs font-bold flex items-center gap-2 transition bg-brand-surface/20 hover:bg-brand-surface/50"
+                  className="px-5 py-3 border border-brand-border text-brand-text hover:border-brand-accent/50 rounded-lg text-xs font-bold flex items-center gap-2 transition bg-brand-surface/20 hover:bg-brand-surface/50 cursor-pointer"
                 >
                   <Copy className="w-4 h-4" /> Salin Caption Terpilih
                 </button>
                 <button
                   onClick={() => onNavigate('calendar')}
-                  className="px-5 py-3 bg-[#332518] hover:bg-[#4d3621] text-brand-text rounded-lg text-xs font-bold flex items-center gap-2 transition"
+                  className="px-5 py-3 bg-brand-surface2 hover:bg-brand-surface border border-brand-border/30 hover:border-brand-accent/40 text-brand-text rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer"
                 >
                   <Calendar className="w-4 h-4 text-brand-accent" strokeWidth={1.5} /> Jadwalkan Posting
                 </button>
@@ -1100,7 +1166,7 @@ export default function ToolsViews({
           <div className="glass-card p-6 md:p-8 space-y-6">
             <div className="space-y-2">
               <span className="text-[10px] font-mono text-brand-accent font-bold">📋 DESKRIPSI PRODUK</span>
-              <div className="bg-[#1c1410] border border-brand-border/40 p-5 rounded-xl text-xs text-brand-text leading-relaxed whitespace-pre-line max-h-96 overflow-y-auto select-all">
+              <div className="bg-[#090e1a] border border-brand-border/40 p-5 rounded-xl text-xs text-brand-text leading-relaxed whitespace-pre-line max-h-96 overflow-y-auto select-all">
                 {descriptionOutput.description}
               </div>
             </div>
@@ -1174,7 +1240,7 @@ export default function ToolsViews({
                     </div>
 
                     <div className="font-extrabold text-sm text-brand-text">{item.title}</div>
-                    <div className="text-xs text-brand-muted/90 bg-[#1c1410] p-3 rounded-lg border border-brand-border/20">
+                    <div className="text-xs text-brand-muted/90 bg-[#090e1a] p-3 rounded-lg border border-brand-border/20">
                       <strong className="text-brand-accent block text-[10px] uppercase font-mono mb-1">Konsep Video:</strong>
                       {item.concept}
                     </div>
@@ -1207,7 +1273,7 @@ export default function ToolsViews({
               {chatOutput.map((reply, idx) => (
                 <div
                   key={idx}
-                  className="p-5 bg-[#1c1410] border border-brand-border/40 hover:border-brand-accent/30 rounded-2xl flex flex-col justify-between neumorph gap-4 text-xs tracking-wide leading-relaxed"
+                  className="p-5 bg-brand-surface2/60 border border-brand-border/40 hover:border-brand-accent/30 rounded-2xl flex flex-col justify-between neumorph gap-4 text-xs tracking-wide leading-relaxed"
                 >
                   <p className="text-brand-text select-all whitespace-pre-line italic">"{reply}"</p>
                   <button
@@ -1271,6 +1337,138 @@ export default function ToolsViews({
             </button>
           </div>
         )}
+
+        {/* SECTION: WADAH HISTORY & DATA LATIH KHUSUS TOOL INI */}
+        <div className="glass-card p-6 border-brand-accent/20 space-y-6 mt-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-brand-border/30 pb-4">
+            <div>
+              <span className="block text-[10px] font-mono text-brand-accent font-extrabold uppercase tracking-widest">📁 DOKUMEN & INTEGRASI</span>
+              <h3 className="text-base font-serif font-medium text-brand-text">Arsip Generasi & Data Latih AI</h3>
+            </div>
+            {aiTrainer && (
+              <span className="text-[10px] bg-brand-accent/15 text-brand-accent border border-brand-accent/20 px-2.5 py-1 rounded-full font-mono font-bold">
+                🧠 Trained: {aiTrainer.character}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* COLUMN 1: WADAH RIWAYAT AI TERPILIH */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold text-brand-text flex items-center gap-1.5 font-mono uppercase tracking-wide">
+                📜 Riwayat Generasi AI Ini
+              </h4>
+              
+              {(() => {
+                const targetType = toolId === 'caption_tool' ? 'caption' : 
+                                   toolId === 'description_tool' ? 'description' : 
+                                   toolId === 'content_plan_tool' ? 'content-plan' : 
+                                   toolId === 'chat_reply_tool' ? 'chat-reply' : 'competitor';
+                
+                const filteredContents = contents.filter(c => c.type === targetType);
+                
+                if (filteredContents.length === 0) {
+                  return (
+                    <div className="p-5 bg-[#090e1a] border border-brand-border/20 rounded-xl text-center text-brand-muted text-[11px] leading-relaxed">
+                      Belum ada arsip copy jualan khusus untuk alat AI ini. Hasilkan satu di atas!
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {filteredContents.map((c) => {
+                      let cleanPreview = '';
+                      try {
+                        const parsed = JSON.parse(c.content);
+                        if (Array.isArray(parsed)) cleanPreview = parsed[0];
+                        else if (typeof parsed === 'object') cleanPreview = parsed.description || parsed.previewText || JSON.stringify(parsed);
+                        else cleanPreview = c.content;
+                      } catch (_) {
+                        cleanPreview = c.content;
+                      }
+
+                      return (
+                        <div key={c.id} className="p-3 bg-[#090e1a] border border-brand-border/30 rounded-lg space-y-2 hover:border-brand-accent/20 transition group">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-mono font-bold text-brand-accent line-clamp-1">{c.title}</span>
+                            <div className="flex gap-2 opacity-60 group-hover:opacity-100 transition">
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(cleanPreview);
+                                  alert('Arsip disalin!');
+                                }}
+                                className="text-brand-text hover:text-brand-accent p-0.5 rounded cursor-pointer"
+                                title="Salin"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                              {onDeleteContent && (
+                                <button 
+                                  type="button"
+                                  onClick={() => onDeleteContent(c.id)}
+                                  className="text-brand-muted hover:text-red-400 p-0.5 rounded cursor-pointer"
+                                  title="Hapus"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-brand-muted/95 line-clamp-2 italic leading-relaxed">
+                            "{cleanPreview}"
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* COLUMN 2: BRAND VOICE DATA LATIH UTAMA */}
+            <div className="space-y-4 md:border-l md:border-brand-border/20 md:pl-6">
+              <h4 className="text-xs font-bold text-brand-text flex items-center gap-1.5 font-mono uppercase tracking-wide">
+                🧠 Status & Sampel Data Latih Toko
+              </h4>
+
+              {aiTrainer ? (
+                <div className="p-4 bg-[#090e1a] border border-brand-border/30 rounded-xl space-y-3.5 text-xs text-brand-muted leading-relaxed font-sans font-medium">
+                  <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-mono font-extrabold text-brand-accent">Identitas & Karakter Suara</span>
+                    <p className="text-brand-text text-[11px]">"{aiTrainer.character}" — Level Keformalan {aiTrainer.formalityLevel || 2}/5</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-mono font-extrabold text-brand-accent">Kata Emas Langganan</span>
+                    <p className="text-brand-text text-[11px] font-mono">{aiTrainer.favoriteWords || 'Kak, Bestie, Checkout'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-mono font-extrabold text-[#8AC98A]">Sampel Latihan Andalan</span>
+                    <p className="text-brand-text italic text-[11px] line-clamp-2">
+                      "{aiTrainer.sampleCaptions?.[0] || 'Sstt.. khusus follower setia ada rahasia diskon super hemat malam ini.'}"
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-brand-border/10 flex justify-between items-center text-[10px]">
+                    <span>Target: {aiTrainer.targetAge}</span>
+                    <button 
+                      type="button"
+                      onClick={() => onNavigate('ai_trainer' as any)} 
+                      className="text-brand-accent font-extrabold hover:underline"
+                    >
+                      Latih Ulang AI →
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-5 bg-[#090e1a] border border-brand-border/20 rounded-xl text-center text-brand-muted text-[11px] leading-relaxed">
+                  Belum ada profil brand voice terdaftar. Silakan kunjungi menu AI Trainer untuk melatih kecerdasan asisten tokomu.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
       </div>
     </motion.div>

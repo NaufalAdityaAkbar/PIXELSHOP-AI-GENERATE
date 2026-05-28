@@ -117,6 +117,7 @@ model AiSettings {
   formalityLevel  Int      @default(2)         // 1-5
   targetAge       String   @default("semua")
   targetLocation  String   @default("Indonesia")
+  toneWarna       String   @default("emosional-hangat")
   exampleCaptions String[]
   updatedAt       DateTime @updatedAt
 

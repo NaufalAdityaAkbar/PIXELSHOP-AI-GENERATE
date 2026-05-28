@@ -76,36 +76,33 @@ export default function DashboardView({
       animate="show"
       className="space-y-8"
     >
-      {/* Welcome Hero Grid - Ember Gold Glass Box */}
-      <motion.div variants={cardVariant} className="glass-card p-5 sm:p-6 md:p-8 relative overflow-hidden neumorph border border-brand-accent/20 cursor-crosshair">
+      {/* Welcome Hero Grid - Cyber Midnight Blue Glass Box */}
+      <motion.div variants={cardVariant} className="glass-card p-5 sm:p-6 md:p-8 relative overflow-hidden border border-brand-border/40">
         <InteractiveBubbles onAddXP={(xp) => onAddXP && onAddXP(xp, `🫧 Gelembung pecah! (+${xp} XP)`)} />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-accent/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-accent/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
-          <div className="space-y-3 w-full">
+          <div className="space-y-2.5 w-full">
             <div className="flex flex-col space-y-0.5">
-              <span className="inline-flex w-fit items-center gap-1.5 px-3 py-1 rounded-full bg-brand-accent/10 text-brand-accent text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Toko Kamu Sedang Aktif
-              </span>
-              <span className="font-script text-xl sm:text-2xl text-brand-accent pl-1 origin-left select-none">
-                Semangat pagi, Mitra UMKM Tangguh!
+              <span className="inline-flex w-fit items-center gap-1.5 px-3 py-1 rounded-full bg-brand-accent/10 text-brand-accent text-[10px] font-mono font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3 animate-pulse" /> Toko Kamu Sedang Aktif
               </span>
             </div>
             
-            <h1 className="text-2xl sm:text-3.5xl md:text-4xl font-display font-medium text-brand-text tracking-tight">
-              Selamat Datang, <span className="italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-brand-accent to-[#EED4B7]">{shopInfo.shopName}</span>! 👋
+            <h1 className="text-2xl sm:text-3.5xl md:text-4xl font-serif font-black text-brand-text tracking-tight">
+              Selamat Datang, <span className="text-brand-accent">{shopInfo.shopName}</span>! 👋
             </h1>
-            <p className="text-xs text-brand-muted max-w-xl">
+            <p className="text-xs text-brand-muted max-w-xl leading-relaxed">
               Kategori: <strong className="text-brand-text">{shopInfo.category}</strong> • Voice: <strong className="text-brand-text capitalize">{shopInfo.brandVoice}</strong>. Pantau metrik jualanmu dan gunakan AI untuk melipatgandakan omzet jualan hari ini.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-[#1c1410] border border-brand-border/40 px-4 py-3 rounded-xl shrink-0 w-full sm:w-auto self-stretch sm:self-auto justify-center sm:justify-start">
-            <div className="p-2.5 bg-brand-accent/25 rounded-lg text-brand-accent">
+          <div className="flex items-center gap-3 bg-[#090e1a]/70 border border-brand-border/40 px-4 py-3 rounded-xl shrink-0 w-full sm:w-auto self-stretch sm:self-auto justify-center sm:justify-start">
+            <div className="p-2.5 bg-brand-accent/20 rounded-lg text-brand-accent">
               <Zap className="w-5 h-5 fill-brand-accent" />
             </div>
             <div>
-              <div className="text-xl font-black text-brand-text">{shopInfo.streak} Hari</div>
+              <div className="text-xl font-black text-brand-text font-mono">{shopInfo.streak} Hari</div>
               <div className="text-[10px] uppercase font-mono tracking-widest text-[#8AC98A] font-bold">● STREAK AKTIF</div>
             </div>
           </div>
@@ -115,10 +112,10 @@ export default function DashboardView({
         <div className="mt-8 pt-6 border-t border-brand-border/30 space-y-3">
           <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2">
             <div className="flex items-center gap-3">
-              <span className="px-3 py-1.5 bg-[#B4753A] text-brand-bg text-xs font-black rounded-lg">
+              <span className="px-3 py-1 bg-brand-accent text-brand-bg text-[10px] font-mono font-black rounded-lg uppercase tracking-wider">
                 LEVEL {shopInfo.level}
               </span>
-              <span className="text-sm font-bold text-brand-text tracking-wide uppercase">
+              <span className="text-xs font-bold text-brand-text tracking-wider uppercase font-mono">
                 {currentLevelLabel}
               </span>
             </div>
@@ -127,9 +124,9 @@ export default function DashboardView({
             </div>
           </div>
 
-          <div className="w-full bg-[#1c1410] h-3.5 rounded-full border border-brand-border/30 overflow-hidden p-0.5">
+          <div className="w-full bg-[#090e1a] h-3 rounded-full border border-brand-border/30 overflow-hidden p-0.5">
             <div
-              className="h-full bg-gradient-to-r from-[#B4753A] to-brand-accent rounded-full transition-all duration-300 relative"
+              className="h-full bg-gradient-to-r from-brand-accent/70 to-brand-accent rounded-full transition-all duration-300 relative"
               style={{ width: `${percent}%` }}
             >
               <div className="absolute inset-0 bg-white/10 animate-pulse" />
@@ -161,7 +158,7 @@ export default function DashboardView({
           }
         ].map((stat, i) => (
           <motion.div variants={cardVariant} key={i} className="glass-card p-6 flex items-start gap-4">
-            <div className="p-3 bg-[#332518] rounded-xl">{stat.icon}</div>
+            <div className="p-3 bg-brand-accent/15 border border-brand-accent/20 rounded-xl">{stat.icon}</div>
             <div className="space-y-1">
               <span className="block text-[10px] font-mono tracking-widest text-brand-muted">{stat.label}</span>
               <span className="block text-2xl font-extrabold text-brand-text">{stat.value}</span>

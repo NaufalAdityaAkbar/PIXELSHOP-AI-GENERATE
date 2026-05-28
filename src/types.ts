@@ -56,6 +56,7 @@ export interface AITrainerSettings {
   sampleCaptions: string[]; // up to 3 captions
   targetAge: 'remaja' | 'dewasa muda' | 'ibu rumah tangga' | 'semua';
   targetLocation: string;
+  toneWarna?: 'emosional-hangat' | 'rasional-informatif' | 'hype-energetik';
 }
 
 export interface ShopInfo {
@@ -92,3 +93,14 @@ export type PageId =
   | 'achievements'
   | 'ai_trainer'
   | 'settings';
+
+export interface ConfirmDialogOptions {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'danger';
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+}

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Product, PageId } from '../types';
 import { formatPriceIDR } from '../utils';
+import { useAppContext } from '../context/AppContext';
 
 interface ProductsViewProps {
   products: Product[];
@@ -99,6 +100,7 @@ export default function ProductsView({
   onDeleteProduct,
   onSelectProductForTool
 }: ProductsViewProps) {
+  const ctx = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -822,7 +824,16 @@ export default function ProductsView({
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => onDeleteProduct(p.id)}
+                      onClick={() => {
+                        ctx.triggerConfirm({
+                          title: "Hapus Produk",
+                          message: `Apakah Anda yakin ingin menghapus "${p.name}" dari katalog? Tindakan ini permanen dan tidak dapat dibatalkan.`,
+                          type: "danger",
+                          confirmText: "HAPUS SEKARANG",
+                          cancelText: "BATAL",
+                          onConfirm: () => onDeleteProduct(p.id)
+                        });
+                      }}
                       className="p-1.5 hover:bg-red-500/10 hover:text-red-400 rounded text-brand-muted transition cursor-pointer"
                       title="Hapus Produk"
                     >

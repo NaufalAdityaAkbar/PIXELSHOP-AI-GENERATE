@@ -3,8 +3,8 @@ import "./globals.css";
 import ClientLayout from "./ClientLayout";
 
 export const metadata: Metadata = {
-  title: "PixelShop | Dashboard Admin",
-  description: "AI-powered ecommerce dashboard for UMKM Indonesia",
+  title: "PixelShop | Beranda",
+  description: "Asisten AI Pembuat Konten & Solusi Jualan UMKM Indonesia",
 };
 
 export default function RootLayout({
